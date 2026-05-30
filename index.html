@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Same Time Tomorrow">
+<title>Same Time Tomorrow — Nutrition Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --yellow: #e8ff3b; --bg: #0a0a0a; --surface: #111111; --border: #1e1e1e;
+    --muted: #555555; --dim: #333333; --text: #ffffff; --subtext: #888888;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; }
+  .logo { text-align: center; margin-bottom: 36px; }
+  .logo-top { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 5px; color: var(--yellow); line-height: 1; }
+  .logo-bot { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 5px; color: var(--text); line-height: 1; }
+  .logo-sub { font-size: 10px; letter-spacing: 4px; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
+  .label { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .btn-primary {
+    width: 100%; background: var(--yellow); color: #000; border: none; border-radius: 10px;
+    padding: 17px; font-size: 12px; letter-spacing: 3px; font-family: 'DM Mono', monospace;
+    font-weight: 500; cursor: pointer; text-transform: uppercase; margin-top: 14px; transition: opacity 0.15s;
+  }
+  .btn-primary:disabled { background: #1a1a1a; color: #333; cursor: not-allowed; }
+  .btn-primary:not(:disabled):active { opacity: 0.8; }
+  #apikey { min-height: 100vh; align-items: center; justify-content: center; padding: 32px 24px; }
+  .apikey-inner { width: 100%; max-width: 440px; }
+  .info-box { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+  .info-box p { font-size: 12px; color: var(--subtext); line-height: 1.8; }
+  .info-box a { color: var(--yellow); text-decoration: none; }
+  .info-step { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  input[type=text], input[type=password] {
+    width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px;
+    color: var(--text); font-size: 13px; padding: 16px 48px 16px 18px; font-family: 'DM Mono', monospace; outline: none;
+  }
+  input[type=text]:focus, input[type=password]:focus { border-color: #444; }
+  .key-row { position: relative; }
+  .key-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
+  .saved-badge { background: #0f1a00; border: 1px solid #2a3a00; border-radius: 10px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; display: none; }
+  .saved-badge.visible { display: flex; }
+  .saved-text { font-size: 12px; color: #a8d000; letter-spacing: 1px; }
+  .clear-btn { background: none; border: none; color: var(--muted); font-size: 11px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  #setup { min-height: 100vh; align-items: center; justify-content: center; padding: 32px 24px; }
+  .setup-inner { width: 100%; max-width: 440px; }
+  .step { display: none; }
+  .step.active { display: block; }
+  input[type=number] {
+    width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px;
+    color: var(--text); font-size: 32px; padding: 18px 20px; font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 3px; outline: none; appearance: textfield; -moz-appearance: textfield;
+  }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .goal-btn { width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all 0.15s; margin-bottom: 10px; text-align: left; }
+  .goal-btn.selected { background: var(--yellow); border-color: var(--yellow); }
+  .goal-icon { font-size: 26px; flex-shrink: 0; }
+  .goal-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--text); line-height: 1; }
+  .goal-btn.selected .goal-name { color: #000; }
+  .goal-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .goal-btn.selected .goal-desc { color: #333; }
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-top: 20px; display: none; }
+  .result-card.visible { display: block; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .result-stat { text-align: center; }
+  .result-num { font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: var(--yellow); line-height: 1; }
+  .result-unit { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+  .result-timeline { text-align: center; border-top: 1px solid #1a1a1a; margin-top: 16px; padding-top: 16px; }
+  .result-timeline-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--text); }
+  .result-timeline-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+  #analyzer { min-height: 100vh; padding: 28px 20px 48px; max-width: 440px; margin: 0 auto; width: 100%; }
+  .app-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .app-logo-top { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; color: var(--yellow); line-height: 1; }
+  .app-logo-bot { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; line-height: 1; }
+  .app-goal-info { text-align: right; }
+  .app-goal-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+  .app-goal-val { font-size: 11px; color: var(--subtext); line-height: 1.7; }
+  .progress-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 20px; display: none; }
+  .progress-card.visible { display: block; }
+  .progress-title { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 14px; }
+  .progress-row { margin-bottom: 12px; }
+  .progress-row:last-child { margin-bottom: 0; }
+  .progress-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .progress-key { font-size: 11px; color: var(--subtext); }
+  .progress-val { font-size: 11px; color: var(--text); }
+  .progress-val.hit { color: var(--yellow); }
+  .progress-bar-bg { height: 4px; background: #1a1a1a; border-radius: 2px; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .bar-cal { background: var(--yellow); }
+  .bar-pro { background: var(--text); }
+  .upload-zone { border: 2px dashed #2a2a2a; border-radius: 16px; overflow: hidden; cursor: pointer; margin-bottom: 14px; position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #0f0f0f; -webkit-tap-highlight-color: transparent; }
+  .upload-placeholder { text-align: center; padding: 36px; }
+  .upload-icon { font-size: 44px; margin-bottom: 14px; }
+  .upload-text { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .upload-sub { font-size: 10px; color: var(--dim); margin-top: 8px; }
+  #food-preview { width: 100%; max-height: 300px; object-fit: cover; display: none; }
+  .analyzing-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.78); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .analyzing-overlay.visible { display: flex; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 42px; height: 42px; border: 3px solid #2a2a2a; border-top-color: var(--yellow); border-radius: 50%; animation: spin 0.75s linear infinite; }
+  .analyzing-text { font-size: 11px; letter-spacing: 3px; color: var(--subtext); }
+  .manual-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; display: none; }
+  .manual-box.visible { display: block; }
+  .manual-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; }
+  textarea { width: 100%; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; color: var(--text); font-size: 13px; padding: 12px 14px; font-family: 'DM Mono', monospace; outline: none; resize: none; line-height: 1.6; min-height: 72px; }
+  textarea:focus { border-color: #444; }
+  .manual-hint { font-size: 10px; color: var(--dim); margin-top: 8px; line-height: 1.5; }
+  #analyze-btn { display: none; }
+  .error-box { background: #1a0000; border: 1px solid #330000; border-radius: 10px; padding: 14px 16px; color: #ff6b6b; font-size: 12px; margin-bottom: 14px; display: none; line-height: 1.6; }
+  .error-box.visible { display: block; }
+  .meal-result { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; display: none; }
+  .meal-result.visible { display: block; }
+  .foods-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
+  .foods-list { font-size: 13px; color: #ccc; margin-bottom: 16px; line-height: 1.5; }
+  .macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .macro-big { background: #0a0a0a; border-radius: 12px; padding: 16px; text-align: center; }
+  .macro-big-num { font-family: 'Bebas Neue', sans-serif; font-size: 46px; line-height: 1; }
+  .num-cal { color: var(--yellow); }
+  .num-pro { color: var(--text); }
+  .macro-big-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+  .macro-small-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .macro-small { text-align: center; }
+  .macro-small-num { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--subtext); }
+  .macro-small-label { font-size: 10px; letter-spacing: 2px; color: var(--dim); }
+  .result-footer { border-top: 1px solid #1a1a1a; padding-top: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .result-note { font-size: 11px; color: #444; flex: 1; line-height: 1.5; }
+  .confidence-badge { font-size: 9px; letter-spacing: 2px; padding: 4px 8px; border-radius: 4px; flex-shrink: 0; text-transform: uppercase; }
+  .conf-high { background: #1a2a00; color: #a8d000; }
+  .conf-medium { background: #1a1a00; color: #d0c000; }
+  .conf-low { background: #1a0a00; color: #d04000; }
+  .log-section { display: none; }
+  .log-section.visible { display: block; }
+  .log-title { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
+  .log-item { background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .log-foods { font-size: 12px; color: #ccc; }
+  .log-time { font-size: 10px; color: #444; margin-top: 3px; }
+  .log-macros { text-align: right; }
+  .log-cal { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--yellow); }
+  .log-pro { font-size: 10px; color: var(--muted); }
+  .tagline { text-align: center; margin-top: 32px; font-size: 9px; letter-spacing: 3px; color: #222; text-transform: uppercase; }
+  .settings-link { text-align: center; margin-top: 14px; }
+  .settings-link button { background: none; border: none; color: #2a2a2a; font-size: 10px; letter-spacing: 2px; font-family: 'DM Mono', monospace; cursor: pointer; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div id="apikey" class="screen active">
+  <div class="apikey-inner">
+    <div class="logo">
+      <div class="logo-top">SAME TIME</div>
+      <div class="logo-bot">TOMORROW</div>
+      <div class="logo-sub">Nutrition Analyzer</div>
+    </div>
+    <div class="saved-badge" id="saved-badge">
+      <span class="saved-text">✓ API KEY SAVED</span>
+      <button class="clear-btn" onclick="clearKey()">CHANGE</button>
+    </div>
+    <div id="key-entry">
+      <div class="label">Free Google AI API Key</div>
+      <div class="info-box">
+        <p>
+          This app uses Google's free AI to scan your food.<br><br>
+          <span class="info-step">1.</span> Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+          <span class="info-step">2.</span> Sign in with Google → tap <strong style="color:#ccc">Get API Key</strong><br>
+          <span class="info-step">3.</span> Copy and paste below<br><br>
+          <strong style="color:#a8d000">100% free.</strong> No credit card. 1,500 scans/day.
+        </p>
+      </div>
+      <div class="key-row">
+        <input type="password" id="api-key-input" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="key-toggle" onclick="toggleVis()">👁</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="key-btn" disabled onclick="saveKey()">SAVE & CONTINUE →</button>
+  </div>
+</div>
+
+<div id="setup" class="screen">
+  <div class="setup-inner">
+    <div class="logo">
+      <div class="logo-top">SAME TIME</div>
+      <div class="logo-bot">TOMORROW</div>
+      <div class="logo-sub">Set Your Goal</div>
+    </div>
+    <div id="step1" class="step active">
+      <div class="label">Your current bodyweight (lbs)</div>
+      <input type="number" id="weight-input" placeholder="e.g. 215" inputmode="numeric">
+      <button class="btn-primary" id="step1-next" disabled onclick="goStep2()">NEXT →</button>
+    </div>
+    <div id="step2" class="step">
+      <div class="label">What's your goal?</div>
+      <button class="goal-btn" onclick="selectGoal('cut',this)">
+        <span class="goal-icon">🔥</span>
+        <div><div class="goal-name">CUT</div><div class="goal-desc">Lose body fat</div></div>
+      </button>
+      <button class="goal-btn" onclick="selectGoal('maintain',this)">
+        <span class="goal-icon">⚖️</span>
+        <div><div class="goal-name">MAINTAIN</div><div class="goal-desc">Stay at current weight</div></div>
+      </button>
+      <button class="goal-btn" onclick="selectGoal('bulk',this)">
+        <span class="goal-icon">💪</span>
+        <div><div class="goal-name">BULK</div><div class="goal-desc">Build muscle & size</div></div>
+      </button>
+      <div class="result-card" id="goal-result">
+        <div class="result-grid">
+          <div class="result-stat"><div class="result-num" id="res-cal">—</div><div class="result-unit">CALORIES / DAY</div></div>
+          <div class="result-stat"><div class="result-num" id="res-pro">—</div><div class="result-unit">PROTEIN / DAY</div></div>
+        </div>
+        <div class="result-timeline" id="timeline-wrap">
+          <div class="result-timeline-num" id="res-weeks">—</div>
+          <div class="result-timeline-label">ESTIMATED TIMELINE</div>
+        </div>
+      </div>
+      <button class="btn-primary" id="step2-next" disabled onclick="launchApp()">START ANALYZING →</button>
+    </div>
+  </div>
+</div>
+
+<div id="analyzer" class="screen">
+  <div class="app-header">
+    <div>
+      <div class="app-logo-top">SAME TIME</div>
+      <div class="app-logo-bot">TOMORROW</div>
+    </div>
+    <div class="app-goal-info">
+      <div class="app-goal-label">DAILY GOAL</div>
+      <div class="app-goal-val" id="header-goal">—</div>
+    </div>
+  </div>
+  <div class="progress-card" id="progress-card">
+    <div class="progress-title">TODAY'S PROGRESS</div>
+    <div class="progress-row">
+      <div class="progress-meta"><span class="progress-key">Calories</span><span class="progress-val" id="prog-cal-val">0 / 0</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill bar-cal" id="prog-cal-bar" style="width:0%"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-meta"><span class="progress-key">Protein</span><span class="progress-val" id="prog-pro-val">0g / 0g</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill bar-pro" id="prog-pro-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="upload-zone" id="upload-zone" onclick="triggerUpload()">
+    <div class="upload-placeholder" id="upload-placeholder">
+      <div class="upload-icon">📸</div>
+      <div class="upload-text">Tap to photo your plate</div>
+      <div class="upload-sub">Camera or photo library</div>
+    </div>
+    <img id="food-preview" alt="food">
+    <div class="analyzing-overlay" id="analyzing-overlay">
+      <div class="spinner"></div>
+      <div class="analyzing-text">ANALYZING...</div>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(this)">
+  <div class="manual-box" id="manual-box">
+    <div class="manual-label">CORRECT OR DESCRIBE YOUR MEAL (OPTIONAL)</div>
+    <textarea id="manual-desc" placeholder="e.g. 2 pork chops, 1 cup white rice, side salad..."></textarea>
+    <div class="manual-hint">Type what's actually on your plate if AI gets it wrong.</div>
+  </div>
+  <button class="btn-primary" id="analyze-btn" onclick="analyze()">ANALYZE THIS MEAL</button>
+  <div class="error-box" id="error-box"></div>
+  <div class="meal-result" id="meal-result">
+    <div class="foods-label">IDENTIFIED FOODS</div>
+    <div class="foods-list" id="res-foods">—</div>
+    <div class="macro-grid">
+      <div class="macro-big"><div class="macro-big-num num-cal" id="res-calories">—</div><div class="macro-big-label">CALORIES</div></div>
+      <div class="macro-big"><div class="macro-big-num num-pro" id="res-protein">—</div><div class="macro-big-label">PROTEIN</div></div>
+    </div>
+    <div class="macro-small-grid">
+      <div class="macro-small"><div class="macro-small-num" id="res-carbs">—</div><div class="macro-small-label">CARBS</div></div>
+      <div class="macro-small"><div class="macro-small-num" id="res-fat">—</div><div class="macro-small-label">FAT</div></div>
+    </div>
+    <div class="result-footer">
+      <div class="result-note" id="res-notes">—</div>
+      <div class="confidence-badge" id="res-confidence">—</div>
+    </div>
+  </div>
+  <div class="log-section" id="log-section">
+    <div class="log-title">MEAL LOG</div>
+    <div id="log-items"></div>
+  </div>
+  <div class="tagline">Show up. Stay consistent. The results follow.</div>
+  <div class="settings-link"><button onclick="showScreen('apikey')">⚙ UPDATE API KEY</button></div>
+</div>
+
+<script>
+const state = {
+  apiKey:'', weight:0, goal:null, calories:0, protein:0,
+  dailyLog:[], dailyTotals:{calories:0, protein:0},
+  imageBase64:null, imageMime:'image/jpeg',
+};
+
+window.addEventListener('load', () => {
+  const k = localStorage.getItem('stt_gemini_key');
+  const p = localStorage.getItem('stt_profile');
+  if (k) {
+    state.apiKey = k;
+    document.getElementById('saved-badge').classList.add('visible');
+    document.getElementById('key-entry').style.display = 'none';
+    document.getElementById('key-btn').disabled = false;
+    document.getElementById('key-btn').textContent = 'CONTINUE →';
+  }
+  if (p) { try { Object.assign(state, JSON.parse(p)); } catch(e) {} }
+  document.getElementById('api-key-input').addEventListener('input', function() {
+    if (this.value.trim()) {
+      document.getElementById('key-btn').disabled = false;
+      document.getElementById('key-btn').textContent = 'SAVE & CONTINUE →';
+    }
+  });
+  document.getElementById('weight-input').addEventListener('input', function() {
+    document.getElementById('step1-next').disabled = !this.value;
+  });
+});
+
+function toggleVis() {
+  const i = document.getElementById('api-key-input');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function clearKey() {
+  localStorage.removeItem('stt_gemini_key');
+  state.apiKey = '';
+  document.getElementById('saved-badge').classList.remove('visible');
+  document.getElementById('key-entry').style.display = 'block';
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('key-btn').disabled = true;
+  document.getElementById('key-btn').textContent = 'SAVE & CONTINUE →';
+}
+function saveKey() {
+  const v = document.getElementById('api-key-input').value.trim();
+  if (v) { state.apiKey = v; localStorage.setItem('stt_gemini_key', v); }
+  if (state.calories) { showScreen('analyzer'); applyProfile(); }
+  else { showScreen('setup'); }
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goStep2() {
+  state.weight = parseFloat(document.getElementById('weight-input').value);
+  document.getElementById('step1').classList.remove('active');
+  document.getElementById('step2').classList.add('active');
+}
+function selectGoal(g, btn) {
+  document.querySelectorAll('.goal-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.goal = g;
+  const w = state.weight;
+  const t = {
+    cut:      { calories: Math.round(w*12), protein: Math.round(w*1.0), weeks: Math.round((w*0.1)/1.5) },
+    maintain: { calories: Math.round(w*15), protein: Math.round(w*0.8), weeks: null },
+    bulk:     { calories: Math.round(w*18), protein: Math.round(w*1.0), weeks: Math.round((w*0.05)/0.5) },
+  }[g];
+  state.calories = t.calories; state.protein = t.protein;
+  document.getElementById('res-cal').textContent = t.calories.toLocaleString();
+  document.getElementById('res-pro').textContent = t.protein + 'g';
+  const tw = document.getElementById('timeline-wrap');
+  if (t.weeks) { document.getElementById('res-weeks').textContent = '~' + t.weeks + ' WEEKS'; tw.style.display = 'block'; }
+  else tw.style.display = 'none';
+  document.getElementById('goal-result').classList.add('visible');
+  document.getElementById('step2-next').disabled = false;
+}
+function launchApp() {
+  localStorage.setItem('stt_profile', JSON.stringify({ weight:state.weight, goal:state.goal, calories:state.calories, protein:state.protein }));
+  showScreen('analyzer');
+  applyProfile();
+}
+function applyProfile() {
+  document.getElementById('header-goal').innerHTML = state.calories.toLocaleString() + ' kcal<br>' + state.protein + 'g protein';
+}
+function triggerUpload() { document.getElementById('file-input').click(); }
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.imageMime = file.type || 'image/jpeg';
+  state.imageBase64 = null;
+  const preview = document.getElementById('food-preview');
+  preview.style.display = 'block';
+  preview.src = URL.createObjectURL(file);
+  document.getElementById('upload-placeholder').style.display = 'none';
+  document.getElementById('meal-result').classList.remove('visible');
+  document.getElementById('error-box').classList.remove('visible');
+  document.getElementById('manual-box').classList.add('visible');
+  document.getElementById('analyze-btn').style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.imageBase64 = e.target.result.split(',')[1];
+    const btn = document.getElementById('analyze-btn');
+    btn.style.display = 'block';
+    btn.textContent = 'ANALYZE THIS MEAL';
+  };
+  reader.onerror = () => showError('Could not read image. Try a different photo.');
+  reader.readAsDataURL(file);
+}
+async function analyze() {
+  if (!state.imageBase64) return;
+  if (!state.apiKey) { showError('No API key. Tap ⚙ UPDATE API KEY at the bottom.'); return; }
+  const manual = document.getElementById('manual-desc').value.trim();
+  document.getElementById('analyze-btn').style.display = 'none';
+  document.getElementById('analyzing-overlay').classList.add('visible');
+  document.getElementById('error-box').classList.remove('visible');
+  document.getElementById('meal-result').classList.remove('visible');
+  const prompt = (manual
+    ? `The user says this meal contains: "${manual}". Use this as primary reference. Estimate nutrition based on this description and the image.`
+    : `Analyze this food photo. Identify everything on the plate and estimate its nutrition.`)
+    + ` Return ONLY raw JSON, no markdown, no extra text: {"foods":["item1"],"calories":500,"protein":35,"carbs":45,"fat":18,"confidence":"medium","notes":"one sentence"}`;
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${state.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inline_data: { mime_type: state.imageMime, data: state.imageBase64 } },
+            { text: prompt }
+          ]}],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 512 }
+        })
+      }
+    );
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      const msg = e?.error?.message || ('Error ' + res.status);
+      if (res.status === 400) showError('Invalid API key. Tap ⚙ UPDATE API KEY to fix it.');
+      else if (res.status === 429) showError('Rate limit hit. Wait a moment and try again.');
+      else showError('API error: ' + msg);
+      return;
+    }
+    const data = await res.json();
+    let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    text = text.replace(/```json|```/g, '').trim();
+    const s = text.indexOf('{'), e2 = text.lastIndexOf('}');
+    if (s !== -1 && e2 !== -1) text = text.slice(s, e2+1);
+    const p = JSON.parse(text);
+    document.getElementById('res-foods').textContent = (p.foods||[]).join(', ') || 'Mixed plate';
+    document.getElementById('res-calories').textContent = p.calories || 0;
+    document.getElementById('res-protein').textContent = (p.protein||0) + 'g';
+    document.getElementById('res-carbs').textContent = (p.carbs||0) + 'g';
+    document.getElementById('res-fat').textContent = (p.fat||0) + 'g';
+    document.getElementById('res-notes').textContent = p.notes || '';
+    const badge = document.getElementById('res-confidence');
+    badge.textContent = (p.confidence||'low').toUpperCase();
+    badge.className = 'confidence-badge conf-' + (p.confidence||'low');
+    document.getElementById('meal-result').classList.add('visible');
+    const time = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    state.dailyLog.push({...p, time});
+    state.dailyTotals.calories += p.calories||0;
+    state.dailyTotals.protein += p.protein||0;
+    updateProgress(); updateLog();
+    document.getElementById('analyze-btn').style.display = 'block';
+    document.getElementById('analyze-btn').textContent = 'ANALYZE ANOTHER MEAL';
+    document.getElementById('manual-desc').value = '';
+  } catch(err) {
+    showError('Error: ' + (err.message || 'Try again.'));
+    document.getElementById('analyze-btn').style.display = 'block';
+  }
+  document.getElementById('analyzing-overlay').classList.remove('visible');
+}
+function showError(msg) {
+  document.getElementById('error-box').textContent = msg;
+  document.getElementById('error-box').classList.add('visible');
+  document.getElementById('analyzing-overlay').classList.remove('visible');
+  document.getElementById('analyze-btn').style.display = 'block';
+}
+function updateProgress() {
+  const {calories, protein} = state.dailyTotals;
+  const cp = Math.min(100, Math.round(calories/state.calories*100));
+  const pp = Math.min(100, Math.round(protein/state.protein*100));
+  document.getElementById('prog-cal-val').textContent = calories.toLocaleString() + ' / ' + state.calories.toLocaleString();
+  document.getElementById('prog-pro-val').textContent = protein + 'g / ' + state.protein + 'g';
+  document.getElementById('prog-cal-bar').style.width = cp + '%';
+  document.getElementById('prog-pro-bar').style.width = pp + '%';
+  document.getElementById('prog-cal-val').classList.toggle('hit', cp >= 100);
+  document.getElementById('prog-pro-val').classList.toggle('hit', pp >= 100);
+  document.getElementById('progress-card').classList.add('visible');
+}
+function updateLog() {
+  const c = document.getElementById('log-items');
+  c.innerHTML = '';
+  [...state.dailyLog].reverse().forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'log-item';
+    el.innerHTML = `<div><div class="log-foods">${(m.foods||[]).slice(0,2).join(', ')||'Meal'}</div><div class="log-time">${m.time}</div></div><div class="log-macros"><div class="log-cal">${m.calories} kcal</div><div class="log-pro">${m.protein}g protein</div></div>`;
+    c.appendChild(el);
+  });
+  document.getElementById('log-section').classList.add('visible');
+}
+</script>
+</body>
+</html>
