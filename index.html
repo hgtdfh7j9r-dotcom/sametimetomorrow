@@ -10,10 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --yellow: #e8ff3b; --bg: #0a0a0a; --surface: #111111; --border: #1e1e1e;
-    --muted: #555555; --dim: #333333; --text: #ffffff; --subtext: #888888;
-  }
+  :root { --yellow: #e8ff3b; --bg: #0a0a0a; --surface: #111111; --border: #1e1e1e; --muted: #555555; --dim: #333333; --text: #ffffff; --subtext: #888888; }
   html, body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; -webkit-font-smoothing: antialiased; }
   .screen { display: none; }
   .screen.active { display: flex; flex-direction: column; }
@@ -22,11 +19,7 @@
   .logo-bot { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 5px; color: var(--text); line-height: 1; }
   .logo-sub { font-size: 10px; letter-spacing: 4px; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
   .label { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
-  .btn-primary {
-    width: 100%; background: var(--yellow); color: #000; border: none; border-radius: 10px;
-    padding: 17px; font-size: 12px; letter-spacing: 3px; font-family: 'DM Mono', monospace;
-    font-weight: 500; cursor: pointer; text-transform: uppercase; margin-top: 14px; transition: opacity 0.15s;
-  }
+  .btn-primary { width: 100%; background: var(--yellow); color: #000; border: none; border-radius: 10px; padding: 17px; font-size: 12px; letter-spacing: 3px; font-family: 'DM Mono', monospace; font-weight: 500; cursor: pointer; text-transform: uppercase; margin-top: 14px; transition: opacity 0.15s; }
   .btn-primary:disabled { background: #1a1a1a; color: #333; cursor: not-allowed; }
   .btn-primary:not(:disabled):active { opacity: 0.8; }
   #apikey { min-height: 100vh; align-items: center; justify-content: center; padding: 32px 24px; }
@@ -35,10 +28,7 @@
   .info-box p { font-size: 12px; color: var(--subtext); line-height: 1.8; }
   .info-box a { color: var(--yellow); text-decoration: none; }
   .info-step { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
-  input[type=text], input[type=password] {
-    width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px;
-    color: var(--text); font-size: 13px; padding: 16px 48px 16px 18px; font-family: 'DM Mono', monospace; outline: none;
-  }
+  input[type=text], input[type=password] { width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px; color: var(--text); font-size: 13px; padding: 16px 48px 16px 18px; font-family: 'DM Mono', monospace; outline: none; }
   input[type=text]:focus, input[type=password]:focus { border-color: #444; }
   .key-row { position: relative; }
   .key-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
@@ -50,11 +40,7 @@
   .setup-inner { width: 100%; max-width: 440px; }
   .step { display: none; }
   .step.active { display: block; }
-  input[type=number] {
-    width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px;
-    color: var(--text); font-size: 32px; padding: 18px 20px; font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 3px; outline: none; appearance: textfield; -moz-appearance: textfield;
-  }
+  input[type=number] { width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 10px; color: var(--text); font-size: 32px; padding: 18px 20px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 3px; outline: none; appearance: textfield; -moz-appearance: textfield; }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
   .goal-btn { width: 100%; background: var(--surface); border: 1px solid #2a2a2a; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all 0.15s; margin-bottom: 10px; text-align: left; }
   .goal-btn.selected { background: var(--yellow); border-color: var(--yellow); }
@@ -292,7 +278,6 @@ const state = {
   dailyLog:[], dailyTotals:{calories:0, protein:0},
   imageBase64:null, imageMime:'image/jpeg',
 };
-
 window.addEventListener('load', () => {
   const k = localStorage.getItem('stt_gemini_key');
   const p = localStorage.getItem('stt_profile');
@@ -314,7 +299,6 @@ window.addEventListener('load', () => {
     document.getElementById('step1-next').disabled = !this.value;
   });
 });
-
 function toggleVis() {
   const i = document.getElementById('api-key-input');
   i.type = i.type === 'password' ? 'text' : 'password';
@@ -409,7 +393,7 @@ async function analyze() {
     + ` Return ONLY raw JSON, no markdown, no extra text: {"foods":["item1"],"calories":500,"protein":35,"carbs":45,"fat":18,"confidence":"medium","notes":"one sentence"}`;
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${state.apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
